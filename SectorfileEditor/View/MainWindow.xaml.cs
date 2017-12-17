@@ -12,6 +12,7 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Windows.Media.Imaging;
+using System.Windows.Interop;
 
 namespace SectorfileEditor.View
 {
@@ -77,7 +78,8 @@ namespace SectorfileEditor.View
 
             toolWindow = new ToolWindow() { MainWindow = this };
             toolWindow.Show();
-            
+            this.Left = toolWindow.Left + toolWindow.Width + 10;
+
             SctFileReader reader = new SctFileReader();
             // for (int i = 0; i < testPoints.Count() - 1; i++) { geoLines.Add(new SectorFileGeoLine() { Data = testPoints[i] + " " + testPoints[i + 1] }); }
             reader.GeoLineHandler += line =>
@@ -91,13 +93,25 @@ namespace SectorfileEditor.View
 
             logger.Debug("Read " + geoLines.Count + " geo lines");
 
-
-
-            var initialCenter = "N063.15.57.950 E002.44.02.579";
+            HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            source.AddHook(new HwndSourceHook(WndProc));
+            
+            var initialCenter = "N057.53.15.000 E006.15.22.000";
             CenterAt(initialCenter, 90);
          }
 
- 
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+             const int WM_EXITSIZEMOVE = 0x0232;
+
+            if (msg == WM_EXITSIZEMOVE)
+            {
+                DrawLines();
+            }
+
+            return IntPtr.Zero;
+        }
+
         public void DrawLines()
         {
             int skipped = 0;
@@ -112,25 +126,25 @@ namespace SectorfileEditor.View
                     {
                         var from = LatLongUtil.Transform(geoLine.LatitudeStart, geoLine.LongitudeStart);
                         var to = LatLongUtil.Transform(geoLine.LatitudeEnd, geoLine.LongitudeEnd);
-                        if ((to - from).Length > 0.7)
+                        if (ShouldDrawLine(from, to))
                         {
                             writeableBmp.DrawLine((int)from.X, (int)from.Y, (int)to.X, (int)to.Y, Colors.Black);
-                        }
-                        else if (from.Y < 7 || to.Y < 7)
-                        {
-                            // Debug.WriteLine(string.Format("!!! {0} geoLine {1} {2} - {3} {4}", from.ToString(), geoLine.LatitudeStart, geoLine.LongitudeStart, geoLine.LatitudeEnd, geoLine.LongitudeEnd));
                         }
                         else
                         {
                             skipped++;
                         }
-
                     });
                 Debug.WriteLine("Skipped " + skipped + " points ");
             }
         
         }
 
+        private bool ShouldDrawLine(Point from, Point to)
+        {
+            return ((int)from.X != (int)to.X || (int)from.Y != (int)to.Y)    // from/to are different both x an y
+                && (from.X >= 0 || from.Y > 0 || to.X >= 0 || to.Y >= 0);    // either from or to are in the visible area 
+        }
 
         public void CenterAt(String latLong, double zoom)
         {
@@ -141,7 +155,7 @@ namespace SectorfileEditor.View
             Point p = new Point(londec, latdec);
 
             LatLongUtil.TranslateTransform.X = -p.X;
-            LatLongUtil.TranslateTransform.Y = -LatLongUtil.LatitudeToY(p.Y);
+            LatLongUtil.TranslateTransform.Y = LatLongUtil.LatitudeToY(p.Y);
 
             LatLongUtil.ScaleTransform.ScaleX = zoom;
             LatLongUtil.ScaleTransform.ScaleY = zoom;
@@ -153,11 +167,17 @@ namespace SectorfileEditor.View
         {
             Application.Current.Shutdown();
         }
-        
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+            geoImage.Width = grid.ActualWidth;
+            geoImage.Height = grid.RowDefinitions[0].ActualHeight;
+        }
+
         private void geoImage_MouseMove(object sender, MouseEventArgs e)
         {
             var mousePosition = e.GetPosition(geoImage);
-            textBlockXY.Text = string.Format("({0},{1})", mousePosition.X, mousePosition.Y);
             textBlockLatLong.Text = LatLongUtil.GetLatLongStringFromPoint(mousePosition);
 
             if (geoImage.IsMouseCaptured)
@@ -182,7 +202,7 @@ namespace SectorfileEditor.View
 
         private void geoImage_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            double zoom = e.Delta > 0 ? 1.05 : 1 / 1.05;
+            double zoom = e.Delta > 0 ? 1.2 : 1 / 1.2;
 
             LatLongUtil.ScaleTransform.ScaleX *= zoom;
             LatLongUtil.ScaleTransform.ScaleY *= zoom;

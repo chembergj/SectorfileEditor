@@ -49,7 +49,7 @@ namespace SectorfileEditor.Model
         public static double LatitudeToY(double latitude)
         {
             return System.Math.Log(System.Math.Tan(
-                (90 - latitude) / 360 * System.Math.PI
+                (latitude + 90) / 360 * System.Math.PI
             )) / System.Math.PI * 180;
         }
 
@@ -64,7 +64,7 @@ namespace SectorfileEditor.Model
 
         public static Point Transform(double latdec, double londec)
         {
-            return ScaleTransform.Transform(TranslateTransform.Transform(new Point(londec, LatitudeToY(latdec))));
+            return ScaleTransform.Transform(TranslateTransform.Transform(new Point(londec, -LatitudeToY(latdec))));
         }
 
         public static Point GetLatLongDecimalPointFromLatLongString(string latLong)
@@ -87,7 +87,7 @@ namespace SectorfileEditor.Model
         public static string GetLatLongStringFromPoint(Point p)
         {
             var transformedPoint = TranslateTransform.Inverse.Transform(ScaleTransform.Inverse.Transform(p));
-            double lat = YToLatitude(transformedPoint.Y);
+            double lat = YToLatitude(-transformedPoint.Y);
             double lon = transformedPoint.X;
 
             // Latitude
@@ -115,7 +115,7 @@ namespace SectorfileEditor.Model
             var longitude = GetCoordinate(lon);
 
             return string.Format("{0}{1:000}.{2:00}.{3:00}.{4:000} {5}{6:000}.{7:00}.{8:00}.{9:000}",
-                latIsNegative ? 'N' : 'S', latitude.Degree, latitude.Minutes, latitude.Seconds, latitude.Mseconds,
+                latIsNegative ? 'S' : 'N', latitude.Degree, latitude.Minutes, latitude.Seconds, latitude.Mseconds,
                 lonIsNegative ? 'W' : 'E', longitude.Degree, longitude.Minutes, longitude.Seconds, longitude.Mseconds);
 
         }
