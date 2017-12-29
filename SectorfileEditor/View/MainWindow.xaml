@@ -5,28 +5,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SectorfileEditor.View"
         mc:Ignorable="d"
-        Title="Sectorfile Editor" Height="1000" Width="1000" Loaded="Window_Loaded" Closed="Window_Closed" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
+        Title="Sectorfile Editor" Height="1000" Width="1000" Loaded="Window_Loaded" Closed="Window_Closed" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
+       >
 
-    <Grid x:Name="grid" Margin="0,0,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" >
+    <Grid x:Name="grid" Margin="0,0,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="grid_SizeChanged" >
         <Grid.RowDefinitions>
-            <RowDefinition  Height="*" />
+            <RowDefinition Height="20" />
+            <RowDefinition x:Name="imageRow"  Height="*" />
 
             <RowDefinition Height="Auto" />
             <RowDefinition Height="100" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="39*" />
-            <ColumnDefinition Width="457*"/>
+            <ColumnDefinition Width="78*" />
+            <ColumnDefinition Width="305*"/>
+            <ColumnDefinition Width="609*"/>
         </Grid.ColumnDefinitions>
-
-        <Image  x:Name="geoImage" Grid.Row="0" MouseMove="geoImage_MouseMove" MouseRightButtonDown="geoImage_MouseRightButtonDown" MouseWheel="geoImage_MouseWheel" MouseRightButtonUp="geoImage_MouseRightButtonUp" Grid.Column="0" Stretch="None" Width="{Binding ElementName=grid, Path=ActualWidth}" Height="{Binding ElementName=grid, Path=ActualHeight}" Grid.ColumnSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top" />
-
-        <Border  Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Black" BorderThickness="1">
+        <Menu Grid.Row="0" Grid.ColumnSpan="3">
+            <MenuItem Header="_File">
+                <MenuItem Header="Load ES Symbology settings" Click="MenuItem_LoadESSymbologyClick"/>
+            </MenuItem>
+            <MenuItem Header="_Exit" />
+        </Menu>
+        <Image  x:Name="geoImage" Grid.Row="1"   Grid.Column="0" Grid.ColumnSpan="3" MouseMove="geoImage_MouseMove" MouseRightButtonDown="geoImage_MouseRightButtonDown" MouseWheel="geoImage_MouseWheel" MouseRightButtonUp="geoImage_MouseRightButtonUp" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+        <Border  Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="White">
             <TextBlock x:Name="textBlockLatLong" HorizontalAlignment="Left"  TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Bottom"/>
         </Border>
-        <Border  Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="Black">
+        <Border  Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="Black">
             <TextBox x:Name="logTextBox" ScrollViewer.VerticalScrollBarVisibility="Auto" Height="100"  TextWrapping="Wrap" Text="TextBox"  IsReadOnly="True"/>
         </Border>
+        
 
     </Grid>
 </Window>

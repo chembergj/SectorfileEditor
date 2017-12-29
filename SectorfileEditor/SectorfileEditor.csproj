@@ -61,11 +61,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Control\LogWindowTarget.cs" />
+    <Compile Include="Control\SettingsFileReader.cs" />
     <Compile Include="Model\LatLongUtil.cs" />
     <Compile Include="Control\SctFileReader.cs" />
     <Compile Include="Model\SectorFileGeoLine.cs" />
     <Compile Include="Model\SectorFileLatLongDegreeLine.cs" />
     <Compile Include="Model\SectorFileLine.cs" />
+    <Compile Include="Model\SettingsFileLine.cs" />
+    <Compile Include="Model\SymbolSettingsFileLine.cs" />
     <Compile Include="View\ToolWindow.xaml.cs">
       <DependentUpon>ToolWindow.xaml</DependentUpon>
     </Compile>

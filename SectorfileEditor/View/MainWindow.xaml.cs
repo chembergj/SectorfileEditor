@@ -24,6 +24,8 @@ namespace SectorfileEditor.View
         private static Logger logger = LogManager.GetCurrentClassLogger();
         ToolWindow toolWindow;
         private Point origin;
+        Dictionary<string, Color> sectorfileColors = new Dictionary<string, Color>();
+
 
         public MainWindow()
         {
@@ -49,6 +51,7 @@ namespace SectorfileEditor.View
         }
 
         List<SectorFileLatLongDegreeLine> geoLines = new List<SectorFileLatLongDegreeLine>();
+        Dictionary<String, SymbolSettingsFileLine> symbolSettings = new Dictionary<string, SymbolSettingsFileLine>();
 
         string[] testPoints = new string[]
         {
@@ -80,18 +83,14 @@ namespace SectorfileEditor.View
             toolWindow.Show();
             this.Left = toolWindow.Left + toolWindow.Width + 10;
 
-            SctFileReader reader = new SctFileReader();
-            // for (int i = 0; i < testPoints.Count() - 1; i++) { geoLines.Add(new SectorFileGeoLine() { Data = testPoints[i] + " " + testPoints[i + 1] }); }
-            reader.GeoLineHandler += line =>
-            {
-                var from = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.Start);
-                var to = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.End);
-                geoLines.Add(new SectorFileLatLongDegreeLine(from.X, from.Y, to.X, to.Y));
-            };
-
-            reader.Parse("..\\..\\..\\UnitTestProject1\\Testdata\\EKDK_official_16_13.sct");
-
-            logger.Debug("Read " + geoLines.Count + " geo lines");
+            ReadSymbolSettingsFile();
+            ReadSectorFile();
+            
+                var clearColor = Color.FromRgb(
+                   symbolSettings["Sector:inactive sector background"].R,
+                   symbolSettings["Sector:inactive sector background"].G,
+                   symbolSettings["Sector:inactive sector background"].B);
+            this.Background = new SolidColorBrush(clearColor);
 
             HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             source.AddHook(new HwndSourceHook(WndProc));
@@ -99,6 +98,39 @@ namespace SectorfileEditor.View
             var initialCenter = "N057.53.15.000 E006.15.22.000";
             CenterAt(initialCenter, 90);
          }
+
+        private void ReadSymbolSettingsFile()
+        {
+            var reader = new SettingsFileReader<SymbolSettingsFileLine>();
+            reader.SettingsLineHandler += line => symbolSettings.Add(line.Key, line);
+            reader.Parse("..\\..\\..\\UnitTestProject1\\Testdata\\Symbols.txt");
+            logger.Debug("Read " + symbolSettings.Count + " symbol lines");
+        }
+
+        private void ReadSectorFile()
+        {
+            SctFileReader reader = new SctFileReader();
+            // for (int i = 0; i < testPoints.Count() - 1; i++) { geoLines.Add(new SectorFileGeoLine() { Data = testPoints[i] + " " + testPoints[i + 1] }); }
+            reader.GeoLineHandler += line =>
+            {
+                var from = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.Start);
+                var to = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.End);
+                geoLines.Add(new SectorFileLatLongDegreeLine(from.X, from.Y, to.X, to.Y, line.ColorName));
+            };
+            reader.DefineHandler += (key, color) => {
+                byte blue = (byte)((color & 0xff0000) >> 16); 
+                byte green = (byte)((color & 0xff00) >> 8);
+                byte red = (byte)(color & 0xff);
+                if (!sectorfileColors.ContainsKey(key))
+                {
+                    sectorfileColors.Add(key, Color.FromRgb(red, green, blue));
+                }
+            };
+
+            reader.Parse("..\\..\\..\\UnitTestProject1\\Testdata\\EKDK_official_16_13.sct");
+
+            logger.Debug("Read " + geoLines.Count + " geo lines");
+        }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
@@ -119,16 +151,28 @@ namespace SectorfileEditor.View
             geoImage.Source = writeableBmp;
             using (writeableBmp.GetBitmapContext())
             {
+                var clearColor = Color.FromRgb(
+                    symbolSettings["Sector:inactive sector background"].R,
+                    symbolSettings["Sector:inactive sector background"].G,
+                    symbolSettings["Sector:inactive sector background"].B);
+                writeableBmp.Clear(clearColor);
+                var geoColor = Color.FromRgb(
+                    symbolSettings["Geo:line"].R,
+                    symbolSettings["Geo:line"].G,
+                    symbolSettings["Geo:line"].B);
 
-                writeableBmp.Clear(Colors.White);
-                var brush = (Brush)Brushes.Black.GetAsFrozen();
                 geoLines.ForEach(geoLine =>
                     {
                         var from = LatLongUtil.Transform(geoLine.LatitudeStart, geoLine.LongitudeStart);
                         var to = LatLongUtil.Transform(geoLine.LatitudeEnd, geoLine.LongitudeEnd);
                         if (ShouldDrawLine(from, to))
                         {
-                            writeableBmp.DrawLine((int)from.X, (int)from.Y, (int)to.X, (int)to.Y, Colors.Black);
+                            var color = geoColor;
+                            if(!string.IsNullOrEmpty(geoLine.Color))
+                            {
+                                sectorfileColors.TryGetValue(geoLine.Color, out color);
+                            }
+                            writeableBmp.DrawLine((int)from.X, (int)from.Y, (int)to.X, (int)to.Y, color);
                         }
                         else
                         {
@@ -202,10 +246,19 @@ namespace SectorfileEditor.View
 
         private void geoImage_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            double zoom = e.Delta > 0 ? 1.2 : 1 / 1.2;
 
+            var imageCenter = new Point(geoImage.ActualWidth / 2, geoImage.ActualHeight / 2);
+            var centerCoordBeforeZoom = LatLongUtil.TranslateTransform.Inverse.Transform(LatLongUtil.ScaleTransform.Inverse.Transform(imageCenter));
+ 
+            double zoom = e.Delta > 0 ? 1.2 : 1 / 1.2;
             LatLongUtil.ScaleTransform.ScaleX *= zoom;
             LatLongUtil.ScaleTransform.ScaleY *= zoom;
+            
+            var centerCoordAfterZoom = LatLongUtil.TranslateTransform.Inverse.Transform(LatLongUtil.ScaleTransform.Inverse.Transform(imageCenter));
+            LatLongUtil.TranslateTransform.X += centerCoordAfterZoom.X - centerCoordBeforeZoom.X;
+            LatLongUtil.TranslateTransform.Y += centerCoordAfterZoom.Y - centerCoordBeforeZoom.Y;
+
+
             DrawLines();
             toolWindow.UpdateLabels();
             e.Handled = true;
@@ -216,6 +269,17 @@ namespace SectorfileEditor.View
             geoImage.ReleaseMouseCapture();
             DrawLines();
             this.Cursor = Cursors.Arrow;
+        }
+
+        private void MenuItem_LoadESSymbologyClick(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void grid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            geoImage.Height = imageRow.ActualHeight;
+            geoImage.Width = grid.ActualWidth;
         }
     }
 }

@@ -12,6 +12,7 @@ namespace UnitTestProject1
         public void TestReading()
         {
             int geoLineCount = 0;
+            int defineCount = 0;
 
             var reader = new SctFileReader();
             reader.GeoLineHandler = 
@@ -35,7 +36,21 @@ namespace UnitTestProject1
                         Assert.AreEqual("BUILDING", line.ColorName);
                     }
                 };
+            reader.DefineHandler = (define,color) =>
+            {
+                if(defineCount == 0)
+                {
+                    Assert.AreEqual("ISLAND", define);
+                    Assert.AreEqual(32768, color);
+                }
+                else if(defineCount == 20)
+                {
+                    Assert.AreEqual("BASE", define);
+                    Assert.AreEqual(7290880, color);
+                }
 
+                defineCount++;
+            };
             reader.Parse("..\\..\\Testdata\\EKDK_official_16_13.sct");
             Assert.AreEqual(36050, geoLineCount);
 
