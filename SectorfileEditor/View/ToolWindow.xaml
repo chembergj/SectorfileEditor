@@ -5,24 +5,33 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SectorfileEditor.View"
         mc:Ignorable="d"
-        Title="ToolWindow" Height="300" Width="463.636" Loaded="Window_Loaded">
+        Title="Sectorfile Editor - Tool Window" Height="393.85" Width="463.636">
     <Grid>
-        <TextBox x:Name="textBoxLatLong" HorizontalAlignment="Left" Height="23" Margin="0,37,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="215" RenderTransformOrigin="0.233,0.112"/>
-        <Button x:Name="buttonGo" Content="Go" HorizontalAlignment="Left" Margin="239,36,0,0" VerticalAlignment="Top" Width="43" Click="buttonGo_Click"/>
-        <TextBox x:Name="textBoxZoom" HorizontalAlignment="Left" Height="23" Margin="10,92,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120"/>
-        <TextBox x:Name="textBoxZoom_X" HorizontalAlignment="Left" Height="23" Margin="146,130,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" HorizontalContentAlignment="Right"/>
-        <TextBox x:Name="textBoxZoom_Y" HorizontalAlignment="Left" Height="23" Margin="361,130,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" HorizontalContentAlignment="Right"/>
-        <TextBox x:Name="textBoxTranslate_X_Curr" HorizontalAlignment="Left" Height="23" Margin="87,202,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" HorizontalContentAlignment="Right" IsEnabled="False"/>
-        <TextBox x:Name="textBoxTranslate_Y" HorizontalAlignment="Left" Height="23" Margin="361,199,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" HorizontalContentAlignment="Right"/>
-        <Label x:Name="label" Content="Zoom X" HorizontalAlignment="Left" Margin="10,125,0,0" VerticalAlignment="Top"/>
-        <Label x:Name="label_Copy" Content="Zoom Y" HorizontalAlignment="Left" Margin="231,126,0,0" VerticalAlignment="Top"/>
-        <Label x:Name="label_Copy3" Content="Transl X" HorizontalAlignment="Left" Margin="10,199,0,0" VerticalAlignment="Top"/>
-        <Label x:Name="label_Copy4" Content="Transl Y" HorizontalAlignment="Left" Margin="230,199,0,0" VerticalAlignment="Top"/>
-        <Button x:Name="button" Content="Zoom/Transform" HorizontalAlignment="Center" Margin="0,240,0,0" VerticalAlignment="Top" Width="104" Click="button_Click"/>
-        <TextBox x:Name="textBoxZoom_X_Curr" HorizontalAlignment="Left" Height="23" Margin="67,130,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" IsEnabled="False" HorizontalContentAlignment="Right"/>
-        <TextBox x:Name="textBoxZoom_Y_Curr" HorizontalAlignment="Left" Height="23" Margin="287,130,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" IsEnabled="False" HorizontalContentAlignment="Right"/>
-        <TextBox x:Name="textBoxTranslate_Y_Curr" HorizontalAlignment="Left" Height="23" Margin="287,199,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" HorizontalContentAlignment="Right" IsEnabled="False"/>
-        <TextBox x:Name="textBoxTranslate_X" HorizontalAlignment="Left" Height="23" Margin="160,202,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" HorizontalContentAlignment="Right"/>
+        <GroupBox x:Name="groupBox" Header="Move location/zoom:" HorizontalAlignment="Left" Height="102" Margin="10,78,0,0" VerticalAlignment="Top" Width="436">
+            <Grid Margin="0,0,0,0">
+                <TextBox x:Name="textBoxLatLong" ToolTip="Enter coordinate to center at (ex. N055.36.59.567 E012.38.33.943" HorizontalAlignment="Left" Height="23" Margin="93,14,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="215" RenderTransformOrigin="0.233,0.112"/>
+                <Label x:Name="labelCenter" Content="Center at:" HorizontalAlignment="Left" Margin="10,14,0,0" VerticalAlignment="Top"/>
+                <Button x:Name="buttonGo" Content="Go" HorizontalAlignment="Left" Margin="371,53,0,0" VerticalAlignment="Top" Width="43" Click="buttonGo_Click"/>
+                <TextBox x:Name="textBoxZoom" HorizontalAlignment="Left" Height="23" Margin="93,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+                <Label x:Name="labelZoom" Content="Zoom factor:" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top"/>
+
+            </Grid>
+
+        </GroupBox>
+        <TextBox x:Name="textBoxTranslate_X_Curr" HorizontalAlignment="Left" Height="23" Margin="94,297,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" HorizontalContentAlignment="Right" IsEnabled="False"/>
+        <Label x:Name="label" Content="Zoom X" HorizontalAlignment="Left" Margin="17,220,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="label_Copy" Content="Zoom Y" HorizontalAlignment="Left" Margin="238,221,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="label_Copy3" Content="Transl X" HorizontalAlignment="Left" Margin="17,294,0,0" VerticalAlignment="Top"/>
+        <Label x:Name="label_Copy4" Content="Transl Y" HorizontalAlignment="Left" Margin="237,294,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="textBoxZoom_X_Curr" HorizontalAlignment="Left" Height="23" Margin="74,225,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="68" IsEnabled="False" HorizontalContentAlignment="Right"/>
+        <TextBox x:Name="textBoxZoom_Y_Curr" HorizontalAlignment="Left" Height="23" Margin="294,225,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" IsEnabled="False" HorizontalContentAlignment="Right"/>
+        <TextBox x:Name="textBoxTranslate_Y_Curr" HorizontalAlignment="Left" Height="23" Margin="294,294,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="69" HorizontalContentAlignment="Right" IsEnabled="False"/>
+        <Label x:Name="labelShow" Content="Show:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="checkBoxShowGeo" Content="Geo" HorizontalAlignment="Left" Margin="53,16,0,0" VerticalAlignment="Top" IsChecked="True" Checked="checkBoxShowGeo_CheckStateChanged" Unchecked="checkBoxShowGeo_CheckStateChanged"/>
+        <CheckBox x:Name="checkBoxShowRegions" Content="Regions" HorizontalAlignment="Left" Margin="100,16,0,0" VerticalAlignment="Top" IsChecked="True" Unchecked="checkBoxShowRegions_CheckStateChanged" Checked="checkBoxShowRegions_CheckStateChanged"/>
+        <Label x:Name="labelEdit" Content="Edit:" HorizontalAlignment="Left" Margin="10,30,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="checkBoxEditGeo" Content="Geo" HorizontalAlignment="Left" Margin="53,36,0,0" VerticalAlignment="Top" Unchecked="checkBoxEditGeo_CheckStateChanged" Checked="checkBoxEditGeo_CheckStateChanged"/>
+        <CheckBox x:Name="checkBoxEditRegions" Content="Regions" HorizontalAlignment="Left" Margin="100,36,0,0" VerticalAlignment="Top" Unchecked="checkBoxEditRegions_CheckStateChanged" Checked="checkBoxEditRegions_CheckStateChanged"/>
 
     </Grid>
 </Window>

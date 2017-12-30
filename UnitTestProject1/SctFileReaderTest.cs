@@ -13,6 +13,7 @@ namespace UnitTestProject1
         {
             int geoLineCount = 0;
             int defineCount = 0;
+            int regionCount = 0;
 
             var reader = new SctFileReader();
             reader.GeoLineHandler = 
@@ -51,9 +52,32 @@ namespace UnitTestProject1
 
                 defineCount++;
             };
+            reader.RegionHandler = region =>
+            {
+                if(regionCount == 0)
+                {
+                    Assert.AreEqual("BASECPH", region.Name);
+                    Assert.AreEqual("BASE", region.ColorName);
+                    Assert.AreEqual(7, region.Coordinates.Count);
+                    Assert.AreEqual("N055.43.56.000 E012.48.34.000", region.Coordinates[0]);
+                    Assert.AreEqual("N055.41.58.000 E012.25.56.000", region.Coordinates[5]);
+                    Assert.AreEqual("N055.43.56.000 E012.48.34.000", region.Coordinates[6]);
+                }
+                else if(regionCount == 342)
+                {
+                    Assert.AreEqual("EKRD", region.Name);
+                    Assert.AreEqual("RWY", region.ColorName);
+                    Assert.AreEqual(4, region.Coordinates.Count);
+                    Assert.AreEqual("N056.30.19.553 E010.01.45.910", region.Coordinates[0]);
+                    Assert.AreEqual("N056.30.28.433 E010.02.36.064", region.Coordinates[2]);
+                    Assert.AreEqual("N056.30.20.360 E010.01.45.387", region.Coordinates[3]);
+                }
+                
+                regionCount++;
+            };
             reader.Parse("..\\..\\Testdata\\EKDK_official_16_13.sct");
             Assert.AreEqual(36050, geoLineCount);
-
+            Assert.AreEqual(343, regionCount);
         }
     }
 }

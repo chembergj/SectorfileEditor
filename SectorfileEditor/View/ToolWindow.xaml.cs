@@ -1,17 +1,6 @@
 ﻿using SectorfileEditor.Model;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace SectorfileEditor.View
 {
@@ -20,38 +9,37 @@ namespace SectorfileEditor.View
     /// </summary>
     public partial class ToolWindow : Window
     {
-        public MainWindow MainWindow { get; set; }
+        public Action<bool> ShowGeoStateChanged;
+        public Action<bool> ShowRegionStateChanged;
+        public Action<bool> EditGeoStateChanged;
+        public Action<bool> EditRegionStateChanged;
+        public Action<string, double?> MoveCenterClicked;
 
         public ToolWindow()
         {
             InitializeComponent();
         }
-
+        
         private void buttonGo_Click(object sender, RoutedEventArgs e)
         {
-           
-            MainWindow.CenterAt(textBoxLatLong.Text, double.Parse(textBoxZoom.Text));
+            double zoomFactor = -1;
 
-        }
-
-        private void button_Click(object sender, RoutedEventArgs e)
-        {
-            LatLongUtil.TranslateTransform.X = double.Parse(textBoxTranslate_X.Text);
-            LatLongUtil.TranslateTransform.Y = double.Parse(textBoxTranslate_Y.Text);
-            LatLongUtil.ScaleTransform.ScaleX = double.Parse(textBoxZoom_X.Text);
-            LatLongUtil.ScaleTransform.ScaleY = double.Parse(textBoxZoom_Y.Text);
-       
-
-            MainWindow.DrawLines();
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            textBoxTranslate_X.Text = LatLongUtil.TranslateTransform.X.ToString();
-            textBoxTranslate_Y.Text = LatLongUtil.TranslateTransform.Y.ToString();
-            textBoxZoom_X.Text = LatLongUtil.ScaleTransform.ScaleX.ToString();
-            textBoxZoom_Y.Text = LatLongUtil.ScaleTransform.ScaleY.ToString();
-         
+            if (textBoxLatLong.Text.Length == 0)
+            {
+                MessageBox.Show("Missing coordinate", "Input error", MessageBoxButton.OK);
+            }
+            else if (textBoxZoom.Text.Length > 0 && !double.TryParse(textBoxZoom.Text, out zoomFactor))
+            {
+                MessageBox.Show("Zoom-factor not a valid value (should be positive, decimal number)", "Input error", MessageBoxButton.OK);
+            }
+            else if(!LatLongUtil.RegexCoordinate.IsMatch(textBoxLatLong.Text))
+            {
+                MessageBox.Show("Invalid value for coordinate. Should be latitude and longitude, for example 'N055.36.59.567 E012.38.33.943'", "Input error", MessageBoxButton.OK);
+            }
+            else
+            {
+                MoveCenterClicked?.Invoke(textBoxLatLong.Text, zoomFactor == -1 ? new double?() : zoomFactor);
+            }
         }
 
         public void UpdateLabels()
@@ -60,6 +48,26 @@ namespace SectorfileEditor.View
             textBoxTranslate_Y_Curr.Text = LatLongUtil.TranslateTransform.Y.ToString();
             textBoxZoom_X_Curr.Text = LatLongUtil.ScaleTransform.ScaleX.ToString();
             textBoxZoom_Y_Curr.Text = LatLongUtil.ScaleTransform.ScaleY.ToString();
+        }
+
+        private void checkBoxShowGeo_CheckStateChanged(object sender, RoutedEventArgs e)
+        {
+            ShowGeoStateChanged?.Invoke(checkBoxShowGeo.IsChecked.GetValueOrDefault());
+        }
+
+        private void checkBoxShowRegions_CheckStateChanged(object sender, RoutedEventArgs e)
+        {
+            ShowRegionStateChanged?.Invoke(checkBoxShowRegions.IsChecked.GetValueOrDefault());
+        }
+
+        private void checkBoxEditGeo_CheckStateChanged(object sender, RoutedEventArgs e)
+        {
+            EditGeoStateChanged?.Invoke(checkBoxEditGeo.IsChecked.GetValueOrDefault());
+        }
+
+        private void checkBoxEditRegions_CheckStateChanged(object sender, RoutedEventArgs e)
+        {
+            EditRegionStateChanged?.Invoke(checkBoxEditRegions.IsChecked.GetValueOrDefault());
         }
     }
 }

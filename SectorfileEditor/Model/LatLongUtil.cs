@@ -7,6 +7,8 @@ namespace SectorfileEditor.Model
 {
     public class LatLongUtil
     {
+        public static readonly Regex RegexCoordinate = new Regex(@"^([N|S]\d\d\d?\.\d\d\.\d\d\.\d\d\d)\s+([E|W]\d\d\d?\.\d\d\.\d\d\.\d\d\d)");
+
         public static ScaleTransform ScaleTransform { get; set; }
         public static TranslateTransform TranslateTransform { get; set; }
         public const double multFactor = 100000;
