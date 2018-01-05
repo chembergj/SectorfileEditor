@@ -1,7 +1,9 @@
 ﻿using NLog;
 using SectorfileEditor.Model;
+using SectorfileEditor.Model.SectorFile;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,6 +19,7 @@ namespace SectorfileEditor.Control
         public Action<SectorFileGeoLine> GeoLineHandler { get; set; }
         public Action<string, long> DefineHandler { get; set; }
         public Action<SectorFileRegion> RegionHandler { get; set; }
+        public Action<SectorFileInfo> SectorfileInfoHandler { get; set; }
 
         private static Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -28,7 +31,11 @@ namespace SectorfileEditor.Control
             reader = new StreamReader(filename);
             do
             {
-                if(nextline.StartsWith("[GEO]"))
+                if (nextline.StartsWith("[INFO]"))
+                {
+                    nextline = ReadInfoSection(reader);
+                }
+                if (nextline.StartsWith("[GEO]"))
                 {
                     nextline = ReadGeoSection(reader);
                 }
@@ -95,6 +102,67 @@ namespace SectorfileEditor.Control
                         sectorFileLine.Comment = splittedLine[1].Trim();
                     }
                     GeoLineHandler(sectorFileLine);
+                }
+            } while (!reader.EndOfStream);
+
+            return "";
+        }
+
+        private string ReadInfoSection(StreamReader reader)
+        {
+            string line;
+            int linenum = 0;
+            var info = new SectorFileInfo();
+
+            do
+            {
+                line = reader.ReadLine();
+
+                if (IsCommentLine(line))
+                {
+                    continue;
+                }
+
+                if (line.StartsWith("["))
+                {
+                    return line;
+                }
+                else if (!String.IsNullOrEmpty(line))
+                {
+                    linenum++;
+                    switch (linenum)
+                    {
+                        case 1:
+                            info.Name = line;
+                            break;
+                        case 2:
+                            info.DefaultCallsign = line;
+                            break;
+                        case 3:
+                            info.DefaultAirport = line;
+                            break;
+                        case 4:
+                            info.DefaultLatitude = line;
+                            break;
+                        case 5:
+                            info.DefaultLongitude = line;
+                            break;
+                        case 6:
+                            info.NMPerLatDegree = double.Parse(line, NumberStyles.Any, CultureInfo.InvariantCulture);
+                            break;
+                        case 7:
+                            info.NMPerLongDegree = double.Parse(line, NumberStyles.Any, CultureInfo.InvariantCulture);
+                            break;
+                        case 8:
+                            info.MagVar = double.Parse(line, NumberStyles.Any, CultureInfo.InvariantCulture);
+                            break;
+                        case 9:
+                            SectorfileInfoHandler(info);
+                            return reader.ReadLine();
+                        default:
+                            break;
+                    }
+                    
                 }
             } while (!reader.EndOfStream);
 

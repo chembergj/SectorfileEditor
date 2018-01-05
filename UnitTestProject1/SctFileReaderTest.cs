@@ -75,6 +75,17 @@ namespace UnitTestProject1
                 
                 regionCount++;
             };
+            reader.SectorfileInfoHandler = info =>
+            {
+                Assert.AreEqual("Denmark - VATSCA manual 1609", info.Name);
+                Assert.AreEqual("EKDK_CTR", info.DefaultCallsign);
+                Assert.AreEqual("EKCH", info.DefaultAirport);
+                Assert.AreEqual("N055.37.04.439", info.DefaultLatitude);
+                Assert.AreEqual("E012.39.21.600", info.DefaultLongitude);
+                Assert.AreEqual(60.0, info.NMPerLatDegree);
+                Assert.AreEqual(34.0, info.NMPerLongDegree);
+                Assert.AreEqual(-1.8, info.MagVar);
+            };
             reader.Parse("..\\..\\Testdata\\EKDK_official_16_13.sct");
             Assert.AreEqual(36050, geoLineCount);
             Assert.AreEqual(343, regionCount);

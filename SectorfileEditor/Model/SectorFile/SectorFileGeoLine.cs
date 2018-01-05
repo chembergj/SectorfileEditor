@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace SectorfileEditor.Model
+namespace SectorfileEditor.Model.SectorFile
 {
     public class SectorFileGeoLine : SectorFileLine
     {

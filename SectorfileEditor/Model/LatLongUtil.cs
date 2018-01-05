@@ -86,11 +86,19 @@ namespace SectorfileEditor.Model
             public int Mseconds;
         }
 
-        public static string GetLatLongStringFromPoint(Point p)
+        public static void GetLatLongDegreeFromPoint(Point p, out double latitude, out double longitude)
         {
             var transformedPoint = TranslateTransform.Inverse.Transform(ScaleTransform.Inverse.Transform(p));
-            double lat = YToLatitude(-transformedPoint.Y);
-            double lon = transformedPoint.X;
+            latitude = YToLatitude(-transformedPoint.Y);
+            longitude = transformedPoint.X;
+        }
+        public static string GetLatLongStringFromPoint(Point p)
+        {
+            double lat;
+            double lon;
+
+            GetLatLongDegreeFromPoint(p, out lat, out lon);
+            var transformedPoint = TranslateTransform.Inverse.Transform(ScaleTransform.Inverse.Transform(p));
 
             // Latitude
             while (lat < -180.0)

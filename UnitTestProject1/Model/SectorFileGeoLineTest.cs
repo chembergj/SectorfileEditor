@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SectorfileEditor.Model;
+using SectorfileEditor.Model.SectorFile;
 
 namespace UnitTestProject1.Model
 {

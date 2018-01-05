@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace SectorfileEditor.Model
 {
-    public class SectorFileLatLongRegion
+    public class LatLongRegion
     {
-        private List<SectorFileLatLongDegreePoint> coordinates = new List<SectorFileLatLongDegreePoint>();
+        private List<LatLongDegreePoint> coordinates = new List<LatLongDegreePoint>();
 
         public string Name { get; protected set; }
         public string ColorName { get; protected set; }
-        public List<SectorFileLatLongDegreePoint> Coordinates { get { return coordinates; } }
+        public List<LatLongDegreePoint> Coordinates { get { return coordinates; } }
 
-        public SectorFileLatLongRegion(string name, string colorName, List<SectorFileLatLongDegreePoint> coordinates)
+        public LatLongRegion(string name, string colorName, List<LatLongDegreePoint> coordinates)
         {
             Name = name;
             ColorName = colorName;

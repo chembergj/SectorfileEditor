@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SectorfileEditor.View"
         mc:Ignorable="d"
-        Title="Sectorfile Editor" Height="1000" Width="1000" Loaded="Window_Loaded" Closed="Window_Closed" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
+        Title="Sectorfile Editor" Height="1000" Width="1000" Loaded="Window_Loaded" Closed="Window_Closed" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" Closing="Window_Closing"
        >
 
     <Grid x:Name="grid" Margin="0,0,0,0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" SizeChanged="grid_SizeChanged" >
@@ -27,16 +27,16 @@
             </MenuItem>
             <MenuItem Header="_Exit" />
         </Menu>
-        <Image  x:Name="geoImage" Grid.Row="1"   Grid.Column="0" Grid.ColumnSpan="3" MouseMove="geoImage_MouseMove" MouseRightButtonDown="geoImage_MouseRightButtonDown" MouseWheel="geoImage_MouseWheel" MouseRightButtonUp="geoImage_MouseRightButtonUp" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" />
+        <Image  x:Name="geoImage" Grid.Row="1"   Grid.Column="0" Grid.ColumnSpan="3" MouseMove="geoImage_MouseMove" MouseRightButtonDown="geoImage_MouseRightButtonDown" MouseWheel="geoImage_MouseWheel" MouseRightButtonUp="geoImage_MouseRightButtonUp" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top" MouseLeftButtonDown="geoImage_MouseLeftButtonDown" MouseLeftButtonUp="geoImage_MouseLeftButtonUp" />
         <Border  Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="White">
             <StackPanel Orientation="Horizontal">
-            <TextBlock x:Name="textBlockLatLong" HorizontalAlignment="Left"  TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="textBlockLatLong" HorizontalAlignment="Left"  TextWrapping="Wrap"  VerticalAlignment="Bottom"/>
                 <Label HorizontalAlignment="Left"  VerticalAlignment="Bottom" Height="20" Margin="10,0,0,0" Padding="0,0,0,0" VerticalContentAlignment="Bottom" >Zoom:</Label>
-            <TextBlock x:Name="textBlockZoom" Margin="10,0,0,0" HorizontalAlignment="Left"  TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Bottom"/>
+            <TextBlock x:Name="textBlockZoom" Margin="10,0,0,0" HorizontalAlignment="Left"  TextWrapping="Wrap"  VerticalAlignment="Bottom"/>
             </StackPanel>
         </Border>
         <Border  Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" BorderBrush="Black">
-            <TextBox x:Name="logTextBox" ScrollViewer.VerticalScrollBarVisibility="Auto" Height="100"  TextWrapping="Wrap" Text="TextBox"  IsReadOnly="True"/>
+            <TextBox x:Name="logTextBox" ScrollViewer.VerticalScrollBarVisibility="Auto" Height="100"  TextWrapping="Wrap" IsReadOnly="True"/>
         </Border>
         
 

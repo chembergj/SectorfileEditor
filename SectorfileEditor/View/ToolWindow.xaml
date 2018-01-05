@@ -9,10 +9,10 @@
     <Grid>
         <GroupBox x:Name="groupBox" Header="Move location/zoom:" HorizontalAlignment="Left" Height="102" Margin="10,78,0,0" VerticalAlignment="Top" Width="436">
             <Grid Margin="0,0,0,0">
-                <TextBox x:Name="textBoxLatLong" ToolTip="Enter coordinate to center at (ex. N055.36.59.567 E012.38.33.943" HorizontalAlignment="Left" Height="23" Margin="93,14,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="215" RenderTransformOrigin="0.233,0.112"/>
+                <TextBox x:Name="textBoxLatLong" ToolTip="Enter coordinate to center at (ex. N055.36.59.567 E012.38.33.943" HorizontalAlignment="Left" Height="23" Margin="93,14,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="215" RenderTransformOrigin="0.233,0.112" VerticalContentAlignment="Center"/>
                 <Label x:Name="labelCenter" Content="Center at:" HorizontalAlignment="Left" Margin="10,14,0,0" VerticalAlignment="Top"/>
                 <Button x:Name="buttonGo" Content="Go" HorizontalAlignment="Left" Margin="371,53,0,0" VerticalAlignment="Top" Width="43" Click="buttonGo_Click"/>
-                <TextBox x:Name="textBoxZoom" HorizontalAlignment="Left" Height="23" Margin="93,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+                <TextBox x:Name="textBoxZoom" HorizontalAlignment="Left" Height="23" Margin="93,45,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" VerticalContentAlignment="Center"/>
                 <Label x:Name="labelZoom" Content="Zoom factor:" HorizontalAlignment="Left" Margin="10,45,0,0" VerticalAlignment="Top"/>
 
             </Grid>

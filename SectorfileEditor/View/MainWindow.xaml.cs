@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Media.Imaging;
 using System.Windows.Interop;
+using SectorfileEditor.Model.SectorFile;
 
 namespace SectorfileEditor.View
 {
@@ -23,11 +24,25 @@ namespace SectorfileEditor.View
         private static Logger logger = LogManager.GetCurrentClassLogger();
         ToolWindow toolWindow;
         private Point origin;
+        readonly Color editColor = Colors.Pink;
+        static readonly int editPointDelta = 3; // Half the width and height of an edit point
+        static readonly Rect savedBackgroundRect = new Rect(0.0, 0.0, (double)2 * editPointDelta, (double)2 * editPointDelta);
+        bool draggingEditPoint = false;
+
+        // Data items from sector files
+        List<LatLongDegreeLine> geoLines = new List<LatLongDegreeLine>();
+        List<LatLongRegion> regions = new List<LatLongRegion>();
+        Dictionary<String, SymbolSettingsFileLine> symbolSettings = new Dictionary<string, SymbolSettingsFileLine>();
         Dictionary<string, Color> sectorfileColors = new Dictionary<string, Color>();
+        SectorFileInfo fileInfo = null;
+
+
+        // User options
         bool showGeo = true;
         bool showRegions = true;
         bool editGeo = false;
         bool editRegions = false;
+        private LatLongDegreePoint DraggingEditPoint;
 
         public MainWindow()
         {
@@ -37,7 +52,7 @@ namespace SectorfileEditor.View
             {
                 foreach (var target in NLog.LogManager.Configuration.AllTargets.Where(t => t is LogWindowTarget).Cast<LogWindowTarget>())
                 {
-                     target.LogReceived += LogReceived;
+                    target.LogReceived += LogReceived;
                 }
             }
 
@@ -48,14 +63,10 @@ namespace SectorfileEditor.View
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 logTextBox.Text += log.Message + "\n";
-               
+
             }));
         }
 
-        List<SectorFileLatLongDegreeLine> geoLines = new List<SectorFileLatLongDegreeLine>();
-        List<SectorFileLatLongRegion> regions = new List<SectorFileLatLongRegion>();
-        Dictionary<String, SymbolSettingsFileLine> symbolSettings = new Dictionary<string, SymbolSettingsFileLine>();
-        
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             logger.Info("Starting Sectorfile Editor, version " + Assembly.GetExecutingAssembly().GetName().Version);
@@ -71,7 +82,7 @@ namespace SectorfileEditor.View
 
             ReadSymbolSettingsFile();
             ReadSectorFile();
-            
+
             var clearColor = Color.FromRgb(
                 symbolSettings["Sector:inactive sector background"].R,
                 symbolSettings["Sector:inactive sector background"].G,
@@ -80,10 +91,26 @@ namespace SectorfileEditor.View
 
             HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             source.AddHook(new HwndSourceHook(WndProc));
-            
-            var initialCenter = "N057.53.15.000 E006.15.22.000";
-            CenterAt(initialCenter, 90);
-         }
+
+            string initialCenter; // = "N057.53.15.000 E006.15.22.000";
+            var initialZoom = 90.0;
+
+            if (!string.IsNullOrEmpty(ApplicationSettings.Instance.Center))
+            {
+                initialCenter = ApplicationSettings.Instance.Center;
+                initialZoom = ApplicationSettings.Instance.ZoomFactor;
+            }
+            else
+            {
+                // Use default lat/long from sector file
+                initialCenter = fileInfo.DefaultLatitude + " " + fileInfo.DefaultLongitude;
+            }
+
+            CenterAt(initialCenter, initialZoom);
+
+            // Prepare buffer for storing background before drawing edit point
+            savedBackground = BitmapFactory.New(2*editPointDelta, 2*editPointDelta);
+        }
 
         private void toolWindow_EditRegionStateChanged(bool editState)
         {
@@ -125,15 +152,15 @@ namespace SectorfileEditor.View
         private void ReadSectorFile()
         {
             SctFileReader reader = new SctFileReader();
-            // for (int i = 0; i < testPoints.Count() - 1; i++) { geoLines.Add(new SectorFileGeoLine() { Data = testPoints[i] + " " + testPoints[i + 1] }); }
             reader.GeoLineHandler += line =>
+             {
+                 var from = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.Start);
+                 var to = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.End);
+                 geoLines.Add(new LatLongDegreeLine(new LatLongDegreePoint(from.X, from.Y), new LatLongDegreePoint(to.X, to.Y), line.ColorName));
+             };
+            reader.DefineHandler += (key, color) =>
             {
-                var from = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.Start);
-                var to = LatLongUtil.GetLatLongDecimalPointFromLatLongString(line.End);
-                geoLines.Add(new SectorFileLatLongDegreeLine(from.X, from.Y, to.X, to.Y, line.ColorName));
-            };
-            reader.DefineHandler += (key, color) => {
-                byte blue = (byte)((color & 0xff0000) >> 16); 
+                byte blue = (byte)((color & 0xff0000) >> 16);
                 byte green = (byte)((color & 0xff00) >> 8);
                 byte red = (byte)(color & 0xff);
                 if (!sectorfileColors.ContainsKey(key))
@@ -143,17 +170,17 @@ namespace SectorfileEditor.View
             };
             reader.RegionHandler += region =>
             {
-                regions.Add(new SectorFileLatLongRegion(region.Name, region.ColorName, 
+                regions.Add(new LatLongRegion(region.Name, region.ColorName,
                     region.Coordinates
                     .Select(c =>
                         {
                             var point = LatLongUtil.GetLatLongDecimalPointFromLatLongString(c);
-                            return new SectorFileLatLongDegreePoint(point.X, point.Y);
+                            return new LatLongDegreePoint(point.X, point.Y);
                         }
                     )
                     .ToList()));
             };
-
+            reader.SectorfileInfoHandler += info => fileInfo = info;
             reader.Parse("..\\..\\..\\UnitTestProject1\\Testdata\\EKDK_official_16_13.sct");
 
             logger.Debug("Read " + geoLines.Count + " geo lines");
@@ -161,7 +188,7 @@ namespace SectorfileEditor.View
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
-             const int WM_EXITSIZEMOVE = 0x0232;
+            const int WM_EXITSIZEMOVE = 0x0232;
 
             if (msg == WM_EXITSIZEMOVE)
             {
@@ -199,6 +226,8 @@ namespace SectorfileEditor.View
                             var p = LatLongUtil.Transform(c.Latitude, c.Longitude);
                             points[i++] = (int)p.X;
                             points[i++] = (int)p.Y;
+                            c.X = (int)p.X;
+                            c.Y = (int)p.Y;
                         });
                         points[i++] = points[0];
                         points[i++] = points[1];
@@ -208,7 +237,7 @@ namespace SectorfileEditor.View
                         {
                             for (int j = 0; j < region.Coordinates.Count * 2; j += 2)
                             {
-                                writeableBmp.DrawRectangle(points[j] - 3, points[j + 1] - 3, points[j] + 3, points[j + 1] + 3, Colors.Pink);
+                                writeableBmp.FillRectangle(points[j] - editPointDelta, points[j + 1] - editPointDelta, points[j] + editPointDelta, points[j + 1] + editPointDelta, editColor);
                             }
                         }
 
@@ -225,8 +254,8 @@ namespace SectorfileEditor.View
 
                     geoLines.ForEach(geoLine =>
                         {
-                            var from = LatLongUtil.Transform(geoLine.LatitudeStart, geoLine.LongitudeStart);
-                            var to = LatLongUtil.Transform(geoLine.LatitudeEnd, geoLine.LongitudeEnd);
+                            var from = LatLongUtil.Transform(geoLine.Start.Latitude, geoLine.Start.Longitude);
+                            var to = LatLongUtil.Transform(geoLine.End.Latitude, geoLine.End.Longitude);
                             if (ShouldDrawLine(from, to))
                             {
                                 var color = geoColor;
@@ -235,6 +264,10 @@ namespace SectorfileEditor.View
                                     sectorfileColors.TryGetValue(geoLine.Color, out color);
                                 }
                                 writeableBmp.DrawLine((int)from.X, (int)from.Y, (int)to.X, (int)to.Y, color);
+                                geoLine.Start.X = (int)from.X;
+                                geoLine.Start.Y = (int)from.Y;
+                                geoLine.End.X = (int)to.X;
+                                geoLine.End.Y = (int)to.Y;
                             }
                             else
                             {
@@ -243,9 +276,9 @@ namespace SectorfileEditor.View
                         });
                     Debug.WriteLine("Skipped " + skipped + " geo points ");
                 }
-                
+
             }
-        
+
         }
 
 
@@ -257,24 +290,26 @@ namespace SectorfileEditor.View
 
         public void CenterAt(String latLong, double zoom)
         {
+            // Center
+            textBlockLatLong.Text = latLong;
             var splitted = latLong.Split(' ');
             var latdec = LatLongUtil.ConvertDegreeAngleToDouble(splitted[0]);
             var londec = LatLongUtil.ConvertDegreeAngleToDouble(splitted[1]);
 
-            Point p = new Point(londec, latdec);
+            LatLongUtil.TranslateTransform.X = -londec;
+            LatLongUtil.TranslateTransform.Y = LatLongUtil.LatitudeToY(latdec);
 
-            LatLongUtil.TranslateTransform.X = -p.X;
-            LatLongUtil.TranslateTransform.Y = LatLongUtil.LatitudeToY(p.Y);
-
+            // Set zoom
             LatLongUtil.ScaleTransform.ScaleX = zoom;
             LatLongUtil.ScaleTransform.ScaleY = zoom;
             textBlockZoom.Text = zoom.ToString("###0.00");
+
+            // Now centered at upper-left corner, center at the windows center
+            var dragVector = new Point(ActualWidth / 2 / LatLongUtil.ScaleTransform.ScaleX, ActualHeight / 2 / LatLongUtil.ScaleTransform.ScaleY);
+            LatLongUtil.TranslateTransform.X += dragVector.X;
+            LatLongUtil.TranslateTransform.Y += dragVector.Y;
+
             DrawLines();
-        }
-        
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            Application.Current.Shutdown();
         }
 
         protected override void OnRender(DrawingContext drawingContext)
@@ -291,6 +326,7 @@ namespace SectorfileEditor.View
 
             if (geoImage.IsMouseCaptured)
             {
+                // Panning mode
                 Vector v = e.GetPosition(this) - origin;
                 var pos = e.GetPosition(this);
 
@@ -300,13 +336,87 @@ namespace SectorfileEditor.View
                 origin = e.GetPosition(this);
                 toolWindow.UpdateLabels();
             }
+
+
+            else if (draggingEditPoint)
+            {
+                // Move point
+                Debug.WriteLine("Moving in edit mode");
+
+                var bitmap = (WriteableBitmap)geoImage.Source;
+
+                // Restore previous area
+                if (previousEditPointRect.HasValue)
+                {
+                    bitmap.Blit(previousEditPointRect.Value, savedBackground, savedBackgroundRect);
+                }
+
+                // Save area before drawing
+                
+                previousEditPointRect = new Rect(mousePosition.X - editPointDelta, mousePosition.Y - editPointDelta, 2 * editPointDelta, 2 * editPointDelta);
+                savedBackground.Blit(savedBackgroundRect, bitmap, previousEditPointRect.Value);
+                // Draw moved edit point
+                bitmap.FillRectangle((int)mousePosition.X - editPointDelta, (int)mousePosition.Y - editPointDelta, (int)mousePosition.X + editPointDelta, (int)mousePosition.Y + editPointDelta, editColor);
+
+
+                // Draw lines from each neighbor to point being edited
+
+            }
         }
+
+        Rect? previousEditPointRect = null;
+        WriteableBitmap savedBackground = null;
 
         private void geoImage_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            origin = e.GetPosition(this);
-            this.Cursor = Cursors.Hand;
-            geoImage.CaptureMouse();
+
+            var mousePosition = e.GetPosition(geoImage);
+
+            if (((WriteableBitmap)geoImage.Source).GetPixel((int)mousePosition.X, (int)mousePosition.Y) == editColor)
+            {
+
+                // Edit mode and user rightclicked an edit point
+                LatLongRegion foundRegion = null;
+                LatLongDegreePoint hitPoint = FindHitPoint(mousePosition, out foundRegion);
+                if (hitPoint != null)
+                {
+                    var msg = LatLongUtil.GetLatLongStringFromPoint(new Point(hitPoint.X, hitPoint.Y));
+                    if (foundRegion != null)
+                    {
+                        msg += "\nRegion: " + foundRegion.Name
+                            + "\nColor code: " + foundRegion.ColorName;
+                    }
+                    MessageBox.Show(msg);
+                }
+            }
+            else
+            {
+                // Enter pan mode
+                origin = e.GetPosition(this);
+                this.Cursor = Cursors.Hand;
+                geoImage.CaptureMouse();
+            }
+        }
+
+        // Find the nearest point that was just clicked on by the user
+        private LatLongDegreePoint FindHitPoint(Point mousePosition, out LatLongRegion foundRegion)
+        {
+            var bitmap = (WriteableBitmap)geoImage.Source;
+
+            foundRegion = null;
+            LatLongDegreePoint foundPoint = null;
+
+            foreach (var r in regions)
+            {
+                foundPoint = r.Coordinates.Find(point => Math.Abs(point.X - mousePosition.X) < editPointDelta && Math.Abs(point.Y - mousePosition.Y) < editPointDelta);
+                if (foundPoint != null)
+                {
+                    foundRegion = r;
+                    break;
+                }
+            }
+
+            return foundPoint;
         }
 
         private void geoImage_MouseWheel(object sender, MouseWheelEventArgs e)
@@ -314,11 +424,11 @@ namespace SectorfileEditor.View
 
             var imageCenter = new Point(geoImage.ActualWidth / 2, geoImage.ActualHeight / 2);
             var centerCoordBeforeZoom = LatLongUtil.TranslateTransform.Inverse.Transform(LatLongUtil.ScaleTransform.Inverse.Transform(imageCenter));
- 
+
             double zoom = e.Delta > 0 ? 1.2 : 1 / 1.2;
             LatLongUtil.ScaleTransform.ScaleX *= zoom;
             LatLongUtil.ScaleTransform.ScaleY *= zoom;
-            
+
             var centerCoordAfterZoom = LatLongUtil.TranslateTransform.Inverse.Transform(LatLongUtil.ScaleTransform.Inverse.Transform(imageCenter));
             LatLongUtil.TranslateTransform.X += centerCoordAfterZoom.X - centerCoordBeforeZoom.X;
             LatLongUtil.TranslateTransform.Y += centerCoordAfterZoom.Y - centerCoordBeforeZoom.Y;
@@ -327,8 +437,11 @@ namespace SectorfileEditor.View
             DrawLines();
             toolWindow.UpdateLabels();
             textBlockZoom.Text = LatLongUtil.ScaleTransform.ScaleX.ToString("###0.00");
+
             e.Handled = true;
         }
+
+
 
         private void geoImage_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
@@ -347,5 +460,49 @@ namespace SectorfileEditor.View
             geoImage.Height = imageRow.ActualHeight;
             geoImage.Width = grid.ActualWidth;
         }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            ApplicationSettings.Instance.Center = LatLongUtil.GetLatLongStringFromPoint(new Point(geoImage.ActualWidth / 2, geoImage.ActualHeight / 2));
+            ApplicationSettings.Instance.ZoomFactor = LatLongUtil.ScaleTransform.ScaleX;
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
+
+        private void geoImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var mousePosition = e.GetPosition(geoImage);
+
+            if (!draggingEditPoint && ((WriteableBitmap)geoImage.Source).GetPixel((int)mousePosition.X, (int)mousePosition.Y) == editColor)
+            {
+                Debug.WriteLine("Start edit");
+                draggingEditPoint = true;
+                LatLongRegion foundRegion;
+                DraggingEditPoint = FindHitPoint(mousePosition, out foundRegion);
+            }
+           
+        }
+
+        private void geoImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (draggingEditPoint)
+            {
+                draggingEditPoint = false;
+                var mousePosition = e.GetPosition(geoImage);
+                DraggingEditPoint.X = mousePosition.X;
+                DraggingEditPoint.Y = mousePosition.Y;
+                double latitude;
+                double longitude;
+                LatLongUtil.GetLatLongDegreeFromPoint(mousePosition, out latitude, out longitude);
+                DraggingEditPoint.Latitude = latitude;
+                DraggingEditPoint.Longitude = longitude;
+                previousEditPointRect = null;
+                DrawLines();
+            }
+        }
+
     }
 }
